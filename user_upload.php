@@ -1,4 +1,3 @@
-
 <?php
 /**
  * user_upload.php
