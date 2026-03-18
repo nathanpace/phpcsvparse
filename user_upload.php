@@ -33,7 +33,7 @@ try {
 
     // Check filename arg, throw exception if not present
     if (empty($args["file"])) {
-        throw new Exception("No filename supplied, exiting. Please provide a filename using the --file argument.");
+        throw new Exception("No filename supplied. Please provide a filename using the --file argument.");
     }
 
     // Filename supplied, so instantiate parser and attempt to parse file.
@@ -46,12 +46,17 @@ try {
         exit(0);
     }
 
-    // Check supplied DB parameters, and attempt connection if all are present.
+    // Check supplied DB parameters; if all required are present, attempt connection.
     // If any are missing, throw exception.
     if (empty($args["u"]) || empty($args["p"]) || empty($args["h"])) {
-        throw new Exception("Missing database parameters, exiting. Please provide all of username, password, and host.");
+        throw new Exception("Missing database parameters. Please provide username, password, and host.");
     }
-    $db = new clsDB($args["u"], $args["p"], $args["h"]);
+    $connectionParams = [
+        "username" => $args["u"],
+        "password" => $args["p"],
+        "host" => $args["h"],
+    ];
+    $db = new clsDB($connectionParams);
 
     // Create table if flag is set, and perform no other actions
     if (isset($args["create_table"])) {
