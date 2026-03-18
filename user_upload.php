@@ -28,6 +28,8 @@ try {
     
     if (isset($args["help"])) {
         // Show help message
+        showHelp();
+        exit(0);
     }
 
     if (empty($args["file"])) {
@@ -62,4 +64,24 @@ try {
 
 } catch (Exception $e) {
     echo($e->getMessage() . "\n");
+}
+
+function showHelp() {
+    echo <<<EOT
+PHP CSV Parser - user_upload.php
+-------------------------------
+A command-line script to parse a CSV file and upload its contents to a database.
+
+Usage: php user_upload.php --file=filename.csv [--create_table] [--dry_run] [-u username] [-p password] [-h host] [--help]
+
+Options:
+--file: Required. The CSV file to parse and upload to the database.
+--create_table: Optional. If set, the script will create the database table and exit without parsing or uploading any data. Database parameters must be specified.
+--dry_run: Optional. If set, the script will parse the file and output the parsed data to the console without uploading to the database.
+-u username: Optional. The username for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
+-p password: Optional. The password for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
+-h host: Optional. The host for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
+--help: Optional. If set, the script will display this help message and exit.
+
+EOT;
 }
