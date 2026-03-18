@@ -15,11 +15,11 @@ include_once("./includes/clsParser.php");
 include_once("./includes/clsDB.php");
 
 // Initiate expected arguments and formats
-$args_short = "u:p:h:";
-$args_long = ["file:","create_table","dry_run","help"];
+$argsShort = "u:p:h:";
+$argsLong = ["file:","create_table","dry_run","help"];
 
 // Get args from command line
-$args = getopt($args_short, $args_long);
+$args = getopt($argsShort, $argsLong);
 
 
 try {
@@ -35,14 +35,20 @@ try {
         throw new Exception("No filename supplied");
     }
 
-    // Set dry run flag if set
-    $dry_run = isset($args["dry_run"]);
+    // Filename supplied, so instantiate parser and attempt to parse file.
+    $parser = new clsParser();
 
-    // Attempt database conection
-    if (empty($args["u"]) || empty($args["p"]) || empty($args["h"])) {
-        throw new Exception("Missing database parameters. Please provide username, password, and host.");
+    $parser->parseFile($args["file"]);
+    if (isset($args["dry_run"])) {
+        // Output parsed data to console
+        $parser->output();
+        exit(0);
     }
 
+    // Check db parameters, and attempt connection if all are present. If any are missing, throw exception.
+    if (empty($args["u"]) || empty($args["p"]) || empty($args["h"])) {
+        throw new Exception("Missing database parameters. Please provide all of username, password, and host.");
+    }
     $db = new clsDB($args["u"], $args["p"], $args["h"]);
 
     if (isset($args["create_table"])) {
@@ -51,9 +57,9 @@ try {
         exit(0);
     }
 
-    // At this point, we have a filename, and a database connection. 
-    // Attempt file parsing and database insertion, unless dry run flag is set, in which case we will only parse the file and output the results.
+    // Attempt to insert parsed data into database
+    $db->insertData($parser->getParsedData());
 
 } catch (Exception $e) {
-    echo("Exception thrown: " . $e->getMessage());
+    echo($e->getMessage() . "\n");
 }
