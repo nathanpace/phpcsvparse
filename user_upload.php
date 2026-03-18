@@ -63,10 +63,15 @@ try {
     $db->insertData($parser->getParsedData());
 
 } catch (Exception $e) {
-    echo($e->getMessage() . "\n");
+    echo $e->getMessage() . "\n";
 }
 
-function showHelp() {
+/**
+ * Display command-line usage instructions and options.
+ *
+ */
+function showHelp(): void 
+{
     echo <<<EOT
 PHP CSV Parser - user_upload.php
 -------------------------------
