@@ -32,19 +32,53 @@ class clsDB
 
     public function createTable(): void
     {
-        $sql = 'CREATE TABLE IF NOT EXISTS users (
-                    name character varying(255),
-                    surname character varying(255),
-                    email character varying(255) NOT NULL UNIQUE
-                )';
+        if ($this->tableExists() === false) {
+
+            $sql = 'CREATE TABLE IF NOT EXISTS users (
+                        name character varying(255),
+                        surname character varying(255),
+                        email character varying(255) NOT NULL UNIQUE
+                    )';
+
+            try {
+                $this->pdo->exec($sql);
+                echo "Table 'users' created successfully.\n";
+            } catch (PDOException $e) {
+                throw new Exception("Could not create 'users' table: " . $e->getMessage() . "\n");
+            }
+        } else {
+            echo "Users table already exists. Drop and rebuild? [Y/n] ";
+            $input = rtrim(fgets(STDIN));
+            
+            if ($input === 'Y') {
+                $this->dropTable();
+                $this->createTable();
+            } 
+        }
+        
+    }
+
+    private function dropTable()
+    {
+        $sql = 'DROP TABLE IF EXISTS users';
 
         try {
             $this->pdo->exec($sql);
-            echo "Table 'users' created successfully.\n";
+            echo "Table 'users' dropped successfully.\n";
         } catch (PDOException $e) {
-            throw new Exception("Could not create 'users' table: " . $e->getMessage() . "\n");
+            throw new Exception("Could not drop 'users' table: " . $e->getMessage() . "\n");
         }
-        
+    }
+
+    private function tableExists()
+    {
+        $sql = 'SELECT 1 FROM users';
+        try {
+            $this->pdo->exec($sql);
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 
     public function insertData(array $data): void
