@@ -90,23 +90,43 @@ class clsDB
     }
 
     /**
-     * Attempts to insert the supplied data into the database
+     * Attempts to insert the supplied data rows into the database.
+     * Rows with duplicate email addresses are ignored; a message is written to stdout instead.
      */
     public function insertData(array $data): void
     {
-        // TODO: insert count, proper handling of duplicate entries
-        $sql = 'INSERT INTO users (name, surname, email) VALUES (:name, :surname, :email) ON CONFLICT (email) DO NOTHING';
+        $entries = count($data);
+        $inserts = 0;
+        $duplicates = 0;
+
+        echo "Number of entries to insert: " . $entries . "\n\v";
+
+        $sql = 'INSERT INTO users (name, surname, email) VALUES (:name, :surname, :email)';
+        
         try {
             $pdo = $this->getPdo();
             $stmt = $pdo->prepare($sql);
+
             foreach ($data as $row) {
-                $stmt->execute([
-                    ':name' => $row['name'],
-                    ':surname' => $row['surname'],
-                    ':email' => $row['email'],
-                ]);
+                try {
+                    $stmt->execute([
+                        ':name' => $row['name'],
+                        ':surname' => $row['surname'],
+                        ':email' => $row['email'],
+                    ]);
+                    $inserts++;
+                } catch (\PDOException $e) {
+                    if ($e->errorInfo[0] === self::DUPLICATE_ENTRY) {
+                        echo "Email address " . $row['email'] . " already exists in the database, ignoring.\n";
+                        $duplicates++;
+                        continue;
+                    } else {
+                        $this->handlePdoException($e);
+                    }
+                }
             }
-            echo "Data inserted successfully.\n";
+
+            echo "\nProcess complete. Inserts: " . $inserts . ". Duplicates: " . $duplicates . "\n";
         } catch (\PDOException $e) {
             $this->handlePdoException($e);
         }
@@ -148,8 +168,6 @@ class clsDB
                 throw new \Exception("Users table does not exist, please re-run script with --create-table switch set");
             case self::INVALID_USER_PASS:
                 throw new \Exception("Invalid username/password supplied, please check.");
-            case self::DUPLICATE_ENTRY:
-                throw new \Exception("Duplicate email address in DB, ignoring");
             default:
                 throw new \Exception("Database error: " . $e->getMessage());
         }
