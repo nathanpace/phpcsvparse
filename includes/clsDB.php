@@ -32,14 +32,39 @@ class clsDB
 
     public function createTable(): void
     {
-        // Implementation for creating table in the database
+        $sql = 'CREATE TABLE IF NOT EXISTS users (
+                    name character varying(255),
+                    surname character varying(255),
+                    email character varying(255) NOT NULL UNIQUE
+                )';
 
+        try {
+            $this->pdo->exec($sql);
+            echo "Table 'users' created successfully.\n";
+        } catch (PDOException $e) {
+            throw new Exception("Could not create 'users' table: " . $e->getMessage() . "\n");
+        }
+        
     }
 
     public function insertData(array $data): void
     {
-        // Implementation for inserting data into the database
+        // Use ON CONFLICT to ensure duplicate email addresses are not stored
+        $sql = 'INSERT INTO users (name, surname, email) VALUES (:name, :surname, :email) ON CONFLICT (email) DO NOTHING';
 
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($data as $row) {
+                $stmt->execute([
+                    ':name' => $row['name'],
+                    ':surname' => $row['surname'],
+                    ':email' => $row['email']
+                ]);
+            }
+            echo "Data inserted successfully.\n";
+        } catch (PDOException $e) {
+            throw new Exception("Could not insert data: " . $e->getMessage() . "\n");
+        }
     }
 
 
@@ -47,20 +72,18 @@ class clsDB
     {
 
         try {
-            $conStr = sprintf("pgsql:host=%s;port=%d;dbname=%s;user=%s;password=%s",
+            $dsn = sprintf("pgsql:host=%s;port=%d;dbname=%s",
                 $this->host,
                 $this->port,
-                $this->dbname,
-                $this->username,
-                $this->password);
-
-            $this->pdo = new \PDO($conStr);
-
-            $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                $this->dbname
+            );
+            $this->pdo = new \PDO($dsn, $this->username, $this->password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]);
 
         }
         catch (PDOException $e) {
-            die("Database connection failed: " . $e->getMessage());
+            die("Database connection failed: " . $e->getMessage() . "\n");
         }
     }
 
