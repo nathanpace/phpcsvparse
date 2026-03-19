@@ -10,75 +10,121 @@
 
 class clsParser
 {
-    private array $headerRow = [];
-    private array $parsedData = [];
-    private array $parseErrors = [];
+    private array $headerRow = []; // CSV file header row, stored separately for easy access and reference.
+    private array $dataRows = [];  // CSV file data rows, as an array of associative arrays. Keys are column names from header row.
+
+
+    private array $cleansedData = []; // Parsed and cleansed data rows, as an array of associative arrays.
+    private array $dirtyData = [];    // Data rows that were not parsed successfully due to mismatched column counts, stored as raw arrays for reference and error reporting.
+    private array $duplicateData = [];  // Data rows that were identified as duplicates during parsing, stored as associative arrays for reference and error reporting.
+    
+    private array $parseErrors = [];  // Parse errors ecnountered (mismatched columns, invalid email)
+
+    private array $allowedMimeTypes = [
+        'text/csv',
+        'text/plain', 
+    ];
 
     /**
      * Parse a CSV file and populate parsed rows.
-     * Also checks for file existence, valid CSV format, existence of data rows.
-     * Handles any exceptions during file reading.
+     *
+     * Reads CSV with fopen/fgetcsv, validates header and row length,
+     * tracks dirty rows, and then cleanses parsed data.
      *
      * @param string $filename Path to input CSV file.
-     *
-     * @throws Exception If file does not exist, is not a valid CSV, contains no data, or if there are issues reading the file.
+     * @throws Exception If the file is missing, wrong type, unreadable, missing header, or missing data rows.
      */
     public function parseFile(string $filename): void
     {
-        // Initial file and data validity checks
         if (!file_exists($filename)) {
             throw new Exception('File not found: ' . $filename . ". Please provide a valid filename using the --file argument.");
         }
 
-        if (mime_content_type($filename) !== 'text/csv') {
-            throw new Exception('Invalid file type: ' . $filename . ". Please provide a valid CSV file.");
+        $mimeType = mime_content_type($filename) ?: '';
+        if (!in_array($mimeType, $this->allowedMimeTypes, true)) {
+            throw new Exception('Invalid file type for file ' . $filename . ". Please provide a valid CSV file.");
         }
 
-        try {
-            $rows = array_map('str_getcsv', file($filename));
-        } catch (Exception $e) {
-            throw new Exception('Unable to read file: ' . $e->getMessage() . ". Please ensure the file is a valid CSV and is readable.");
+        $handle = fopen($filename, 'r');
+        if ($handle === false) {
+            throw new Exception('Unable to open file: ' . $filename . ". Please ensure it is readable.");
         }
 
-        if ($this->isEmpty($rows)) {
-            throw new Exception('File: ' . $filename . " is empty. Please provide a non-empty CSV file.");
+        $header = fgetcsv($handle);
+        if ($header === false || empty($header) || count(array_filter($header, fn($v) => $v !== null && $v !== '')) === 0) {
+            fclose($handle);
+            throw new Exception('No valid CSV header row found in file: ' . $filename);
         }
+        $this->headerRow = $header;
 
-        // At this point, we have a valid CSV file with at least one row, so we can proceed with parsing.
-
-        // Isolate header row from rest of data (assume the header row is the first in the file)
-        $this->headerRow = array_shift($rows) ?? [];
-
-        // Check rest of file again just in case the file only had a header row and no data rows, and throw exception if so.
-        if ($this->isEmpty($rows)) {
-            throw new Exception('No data rows found in file: ' . $filename . ". Please provide a CSV file with at least one data row.");
-        }
-
-        // Validate that number of columns in data rows matches header row, and collect parse errors for any mismatches. 
-        // Store valid rows as associative arrays.
-        foreach ($rows as $row) {
-            if (count($row) !== count($this->headerRow)) {
-                $this->parseErrors[] = 'Row ' . (count($this->parsedData) + 2) . ' has a mismatched column count.';
+        $rowNumber = 1;
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNumber++;
+            if ($row === [null] || empty(array_filter($row, fn($v) => $v !== null && $v !== ''))) {
                 continue;
             }
 
-            $this->parsedData[] = array_combine($this->headerRow, $row);
+            if (count($row) !== count($this->headerRow)) {
+                $this->parseErrors[] = 'Row ' . $rowNumber . ' has a mismatched column count.';
+                $this->dirtyData[] = $row;
+                continue;
+            }
+
+            $assoc = array_combine($this->headerRow, $row);
+            if ($assoc === false) {
+                $this->parseErrors[] = 'Row ' . $rowNumber . ' could not be combined with header columns.';
+                $this->dirtyData[] = $row;
+                continue;
+            }
+
+            $assoc['_rowNumber'] = $rowNumber;
+            $this->dataRows[] = $assoc;
         }
 
-        // Cleanse parsed data values in place (names and email normalization).
+        fclose($handle);
+
+        if (empty($this->dataRows)) {
+            throw new Exception('No data rows found in file: ' . $filename . ". Please provide a CSV file with at least one data row.");
+        }
+
         $this->cleanseData();
     }
 
     /**
-     * Get parsed CSV data as an array of associative rows.
+     * Get parsed CSV data rows as an array of associative arrays.
+     *
+     * @return array Parsed rows keyed by header columns.
      */
-    public function getParsedData(): array
+    public function getDataRows(): array
     {
-        return $this->parsedData;
+        return $this->dataRows;
+    }
+
+    /**
+     * Get cleansed data rows.
+     *
+     * @param bool $matchHeaderOrder If true, return in original header order.
+     * @return array Cleansed rows.
+     */
+    public function getCleansedData($matchHeaderOrder = false): array
+    {
+        if ($matchHeaderOrder) {
+            $headerRow = $this->getHeaderRow();
+            $reformattedData = [];
+            foreach ($this->cleansedData as $index => $row) {          
+                foreach ($headerRow as $key) {
+                    $reformattedData[$index][$key] = $row[$key];
+                }
+            }
+            return $reformattedData;
+        }
+        return $this->cleansedData;
     }
 
     /**
      * Get the parsed CSV header row.
+     *
+     * @return array Header columns.
      */
     public function getHeaderRow(): array
     {
@@ -86,63 +132,115 @@ class clsParser
     }
 
     /**
-     * Output the parsed data and any parse errors to the console.
+     * Output dry-run parse results to console.
+     *
+     * @return void
      */
     public function output(): void
     {
-        echo "\nParsed CSV Data:\n";
-        echo "----------------\n";
+        echo "\n+-----------------------------+";
+        echo "\n| CSV Parser - dry run output |";
+        echo "\n+-----------------------------+\n\n";
+        echo "The following cleansed rows from the CSV file would be written to the database:\n\n";
         
-        // Header row
-        echo implode(',', $this->headerRow) . "\n";
-
-        // Data row(s)
-        foreach ($this->parsedData as $row) {
+        // Display cleansed data row(s) - ensure values are in the same order as the header row.
+        foreach ($this->getCleansedData(true) as $row) {
             echo implode(',', $row) . "\n";
         }
 
-        // Parse errors, if any
-        if (!empty($this->parseErrors)) {
-            echo "\nParse Errors:\n";
-            foreach ($this->parseErrors as $i => $error) {
-                echo ($i + 1) . ") {$error}\n";
+        // Show rows with duplicate email addresses, if any
+        if (!empty($this->duplicateData)) {
+            echo "\nThe following duplicate email addresses were found in the file; these rows would not be written to the database:\n\n";
+            foreach ($this->duplicateData as $i => $row) {
+                $rowNum = array_pop($row);
+                echo "Row $rowNum: " . implode(',', $row) . "\n";
             }
         } else {
-            echo "\nNo parse errors.\n";
+            echo "\nNo duplicate addresses found in the data.\n";
         }
+
+        // Show parse errors, if any
+        if (!empty($this->parseErrors)) {
+            echo "\nThe following parse errors were found in the file; these rows would not be written to the database:\n\n";
+            foreach ($this->parseErrors as $i => $error) {
+                echo "$error\n";
+            }
+        } else {
+            echo "\nNo parse errors encountered.\n";
+        }
+        echo "\n";
     }
 
     /**
-     * Cleanse parsed data values in place (names and email normalization).
+     * Cleanse parsed rows (email validation + name normalization).
+     *
+     * @return void
      */
     private function cleanseData(): void
     {
-        foreach ($this->parsedData as $index => $row) {
-            foreach ($row as $key => $value) {
-                if ($key === 'name' || $key === 'surname') {
-                    $this->parsedData[$index][$key] = $this->cleanseName($value);
-                }
+        foreach ($this->getDataRows() as $index => $row) {
+            $rowNumber = $row['_rowNumber'] ?? ($index + 2);
 
-                if ($key === 'email') {
-                    $this->parsedData[$index][$key] = $this->cleanseEmail($index, $value);
-                }
+            try {
+                $this->validatedEmail($index, $row['email'] ?? '', $rowNumber);
+                $this->cleanseValue($index, $row['name'] ?? '', 'name');
+                $this->cleanseValue($index, $row['surname'] ?? '', 'surname');
+            } catch (Exception $e) {
+                continue;
             }
         }
     }
 
     /**
-     * Normalize a name or surname string, capitalizing first letters around apostrophes and hyphens.
-     * This is a simple normalization function and may not cover all edge cases for names, 
-     * but it should handle common formats such as O'Rourke or Johnson-Thompson.
+     * Validate and normalize email values for one row.
+     *
+     * @param int $index Data index in $dataRows.
+     * @param string $email Raw email string.
+     * @param int $rowNumber Original CSV row number for errors.
+     * @throws Exception On empty email, invalid format, or duplicate.
+     * @return void
      */
-    private function cleanseName(string $name): string
+    private function validatedEmail(int $index, string $email, int $rowNumber): void
     {
-        $name = trim($name);
-        if ($name === '') {
-            return $name;
+        $email = trim($email);
+
+        if ($email === '') {
+            $this->parseErrors[] = 'Row ' . $rowNumber . ': Email field is empty.';
+            throw new Exception('Empty email field');
         }
 
-        $parts = explode("'", strtolower($name));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->parseErrors[] = 'Row ' . $rowNumber . ': Invalid email format: ' . $email;
+            throw new Exception('Invalid email format: ' . $email);
+        }
+
+        $email = strtolower($email);
+
+        if (array_search($email, array_column($this->cleansedData, 'email'), true) !== false) {
+            $this->duplicateData[] = $this->dataRows[$index];
+            throw new Exception('Duplicate email found: ' . $email);
+        }
+
+        $this->cleansedData[$index]['email'] = $email;
+    }
+
+    /**
+     * Normalize a name/surname string (capitalizing after apostrophes/hyphens).
+     *
+     * @param int $index Row index for cleansedData writing.
+     * @param string $data Raw name/surname value.
+     * @param string $key Field key ('name' or 'surname').
+     * @return void
+     */
+    private function cleanseValue(int $index, string $data, string $key): void
+    {
+        $data = trim($data);
+        if ($data === '') {
+            $this->cleansedData[$index][$key] = $data;
+            return;
+        }
+
+        $parts = explode("'", strtolower($data));
         foreach ($parts as $i => $part) {
             $subParts = explode('-', $part);
             foreach ($subParts as $j => $sub) {
@@ -151,32 +249,6 @@ class clsParser
             $parts[$i] = implode('-', $subParts);
         }
 
-        return implode("'", $parts);
-    }
-
-    /**
-     * Validate and normalize email values; collect parse errors for invalid emails.
-     */
-    private function cleanseEmail(int $index, string $email): string
-    {
-        $email = trim($email);
-        if ($email === '') {
-            return $email;
-        }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->parseErrors[] = 'Row ' . ($index + 1) . ': Invalid email format: ' . $email;
-            return $email;
-        }
-
-        return strtolower($email);
-    }
-
-    /**
-     * Check if a value is empty.
-     */
-    private function isEmpty($data): bool
-    {
-        return empty($data);
+        $this->cleansedData[$index][$key] = implode("'", $parts);
     }
 }
