@@ -65,7 +65,7 @@ try {
     }
 
     // Attempt to insert parsed data into database
-    $db->insertData($parser->getParsedData());
+    $db->insertData($parser->getCleansedData());
 
 } catch (Exception $e) {
     echo $e->getMessage() . "\n";
