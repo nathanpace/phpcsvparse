@@ -16,6 +16,7 @@ The following requirements are needed to run this parser:
 No extra third-party packages are required in order to use this script, it is designed to be a stand alone solution.
 
 ## Usage
+The code is essentially ready to go, just deploy it in a suitable location. Please ensure that the `user_upload.php` script is at the same level as the `includes/` directory.  
 
 To perform an upload, run the following at a terminal prompt:
 ```bash
