@@ -1,15 +1,15 @@
 # PHP CSV Parser
 
-A small CLI PHP parser that reads a CSV files row-by-row, validates email addresses, normalizes names, and detects and removes duplicates.  
-Cleansed data is stored in a PostgreSQL database, connection details of which need to be passed command line arguments.
-A "dry-run" can also be performed, either against the file alone or against the database to ascertain which rows in the file would be inserted or ignored.
+A small CLI PHP parser that reads a CSV file row-by-row, validates email addresses, normalizes names, and detects and removes duplicates.  
+Cleansed data is stored in a PostgreSQL database, connection details of which need to be passed command line arguments.  
+A "dry-run" of the process can also be performed, either against the file alone or against the database as well to ascertain which rows in the file would be inserted or ignored.
 
 ## Requirements
 The following requirements are needed to run this parser:
 
 - Ubuntu (although this should run fine on any platform as long as PHP is available at the command line).
 - PHP 8.3.
-- PostgreSQL (at least version 13) and etails of a PostgreSQL user with access to create tables and insert data into tables
+- PostgreSQL (at least version 13) and details of a PostgreSQL user with access to create tables and insert data into tables.
 - `user_upload.php` and all files in the `includes/` directory in the project root.
 - CSV file with header row (`name,surname,email`) - this does not need to be in the same directory as the script, but needs to be readable.
 
