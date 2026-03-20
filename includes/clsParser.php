@@ -34,6 +34,8 @@ class clsParser
      *
      * @param string $filename Path to input CSV file.
      * @throws Exception If the file is missing, wrong type, unreadable, missing header, or missing data rows.
+     * 
+     * @return void
      */
     public function parseFile(string $filename): void
     {
