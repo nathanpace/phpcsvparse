@@ -22,6 +22,7 @@ class clsDB
 
     // These values match the error codes returned by Postgres based on the relevant SQL error
     const TABLE_NOT_EXIST = '42P01';
+    const PERMISSION_DENY = '42501';
     const CONNECTION_FAIL = '08006';
     const DUPLICATE_ENTRY = '23505';
 
@@ -60,11 +61,13 @@ class clsDB
                 $this->handlePdoException($e);
             }
         } else {
-            echo "Users table already exists. Drop and rebuild? [Y/n] ";
+            echo "Users table already exists. Enter 'D' to drop table, 'R' to drop and rebuild, or anything else to exit. ";
             $input = rtrim(fgets(STDIN));
-            if ($input === 'Y') {
+            if ($input === 'D') {
                 $this->dropTable();
-                $this->createTable();
+                if ($input === 'R') {
+                    $this->createTable();
+                }
             } else {
                 echo "Users table will not be dropped/rebuilt. Exiting.\n";
             }
@@ -125,8 +128,12 @@ class clsDB
         $entries = count($data);
         $inserts = 0;
         $duplicates = 0;
+        
+        echo "+------------------------------+\n";
+        echo "| Starting data insert process |\n";
+        echo "+------------------------------+\n";
 
-        echo "Number of entries to insert: " . $entries . "\n\v";
+        echo "Number of entries to insert from CSV file: " . $entries . "\n\v";
 
         $sql = 'INSERT INTO users (name, surname, email) VALUES (:name, :surname, :email)';
         
@@ -148,7 +155,7 @@ class clsDB
                     // and carry on processing any remaining rows
                     // Pass any other exception to exception handling function
                     if ($e->errorInfo[0] === self::DUPLICATE_ENTRY) {
-                        echo "Email address " . $row['email'] . " already exists in the database, ignoring.\n";
+                        echo "Email address " . $row['email'] . " already exists in the database, ignoring this row.\n";
                         $duplicates++;
                         continue;
                     } else {
@@ -240,7 +247,7 @@ class clsDB
     private function getPdo(): \PDO
     {
         if ($this->pdo === null) {
-            throw new \Exception("Database connection failed.\n");
+            throw new Exception("Database connection failed.\n");
         }
         return $this->pdo;
     }
@@ -274,9 +281,13 @@ class clsDB
     {
         switch ($e->errorInfo[0]) {
             case self::CONNECTION_FAIL:
-                throw new \Exception("Could not connect to database, please check host/username/password details.\n");
+                throw new Exception("Could not connect to database, please check host/username/password details.\n");
+            case self::TABLE_NOT_EXIST:
+                throw new Exception("Users table does not exist, unable to complete dry run. Please run script with --create-table flag set.\n");
+            case self::PERMISSION_DENY:
+                throw new Exception("Supplied DB user does not have permission to do this.\n");
             default:
-                throw new \Exception("Database error: " . $e->getMessage() . "\n");
+                throw new Exception("Database error.\n");
         }
     }
 }
