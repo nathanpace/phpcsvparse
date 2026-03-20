@@ -34,7 +34,7 @@ class clsDB
         $this->username = $params['username'];
         $this->password = $params['password'];
         $this->host = $params['host'];
-        $this->dbname = $params['dbname'] ?? 'postgres';
+        $this->dbname = 'postgres';
         $this->port = $params['port'] ?? 5432;
         $this->connect();
     }

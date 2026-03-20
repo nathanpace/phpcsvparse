@@ -7,11 +7,11 @@ A "dry-run" can also be performed, either against the file alone or against the 
 ## Requirements
 The following requirements are needed to run this parser:
 
-- Ubuntu (although this should run fine on any platform as long as PHP is available at the command line)
-- PHP 8.3
-- PostgreSQL (at least version 13)
-- `user_upload.php` and all files in the `includes/` directory in the project root
-- CSV file with header row (`name,surname,email`) - this does not need to be in the same directory as the script, but needs to be readable
+- Ubuntu (although this should run fine on any platform as long as PHP is available at the command line).
+- PHP 8.3.
+- PostgreSQL (at least version 13) and etails of a PostgreSQL user with access to create tables and insert data into tables
+- `user_upload.php` and all files in the `includes/` directory in the project root.
+- CSV file with header row (`name,surname,email`) - this does not need to be in the same directory as the script, but needs to be readable.
 
 No extra third-party packages are required in order to use this script, it is designed to be a stand alone solution.
 
@@ -46,8 +46,9 @@ php user_upload.php --help
 ```
 
 ## Assumptions/Notes
-- The database has been configured with a user and password which has permissions to create tables and insert data - these will need to be passed (along with the host) on the command line as per the usage instructions above
-- The supplied CSV file has a header row as its first row, which matches the database fields the data is to be inseerted into
+- The database has been configured with a user and password which has permissions to create tables and insert data - these will need to be passed (along with the host) on the command line as per the usage instructions above.
+- The database name is automatically assumed to be "postgres". To amend this for your own means, you can edit the default name in the clsDB constructor.
+- The supplied CSV file has a header row as its first row, which matches the database fields the data is to be inseerted into.
 - When performing a "dry run" against the database, the script will do a small SELECT action for each email address in the supplied data.
 
 ## Possible future improvements?
