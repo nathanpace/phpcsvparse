@@ -22,7 +22,7 @@ $argsLong = ["file:","create_table","dry_run","help"];
 $args = getopt($argsShort, $argsLong);
 
 // Determine what to do based on args passed. 
-// Order is important here to avoid conflicts. For example, if "help" is passed, we want to show the help message regardless of what other args are passed.
+// Order is important here; for example, if "help" is passed, show the help message regardless of what other args are passed.
 try {
 
      // Show help message if no args submitted or the --help flag has been set
@@ -31,32 +31,35 @@ try {
         exit(0);
     }
 
-    // Check filename arg, throw exception if not present
-    if (empty($args["file"])) {
-        throw new Exception("No filename supplied. Please provide a filename using the --file argument.");
+    // Check filename has been supplied
+    if (!empty($args["file"])) {
+
+        // Check if a dry run is requested
+        if (isset($args["dry_run"])) {
+            $parser = new clsParser();
+            $parser->parseFile($args["file"]);
+            $parser->output();
+            exit(0);
+        }
+    } else {
+        // Throw filename missing exception if no filename and create table has not been specified
+        if (!isset($args["create_table"])) {
+            throw new Exception("No filename supplied. Please provide a filename using the --file argument, or --create_table to create the users table");
+        }
     }
 
-    // Filename supplied, so instantiate parser and attempt to parse file.
-    $parser = new clsParser();
-    $parser->parseFile($args["file"]);
-
-    // Output data to console if dry run flag is set, and exit without attempting to connect to database or upload data.
-    if (isset($args["dry_run"])) {
-        $parser->output();
-        exit(0);
-    }
 
     // Check supplied DB parameters; if all required are present, attempt connection.
     // If any are missing, throw exception.
     if (empty($args["u"]) || empty($args["p"]) || empty($args["h"])) {
         throw new Exception("Missing database parameters. Please provide username, password, and host.");
     }
-    $connectionParams = [
+    
+    $db = new clsDB([
         "username" => $args["u"],
         "password" => $args["p"],
         "host" => $args["h"],
-    ];
-    $db = new clsDB($connectionParams);
+    ]);
 
     // Create table if flag is set, and perform no other actions
     if (isset($args["create_table"])) {
@@ -64,9 +67,16 @@ try {
         exit(0);
     }
 
-    // Attempt to insert parsed data into database
-    $db->insertData($parser->getCleansedData());
+    // Mising file should have been handled above, sanity check here
+    if (empty($args["file"])) {
+        throw new Exception("No filename supplied. Please provide a filename using the --file argument, or --create_table to create the users table.");
+    }
 
+    // Attempt to insert parsed data into database
+    $parser = new clsParser();
+    $parser->parseFile($args["file"]);
+    $db->insertData($parser->getCleansedData());
+    exit(0);
 } catch (Exception $e) {
     echo $e->getMessage() . "\n";
 }
