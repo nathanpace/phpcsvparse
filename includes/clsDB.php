@@ -208,22 +208,23 @@ class clsDB
         
         if (count($inserts) > 0) {
             echo "These rows would be successfully inserted:\n";
+            echo "-----------------------------------------\n";
             foreach ($inserts as $id => $data) {
                 echo "Row " . $id+2 . ": {$data}\n";
             }
             echo "\n";
-        } else {
-            echo "No rows would be inserted.";
-        }
+        } 
  
         if (count($ignores) > 0) {
             echo "These rows would NOT be inserted as the email addresses already exist in the DB:\n";
+            echo "--------------------------------------------------------------------------------\n";
             foreach ($ignores as $id => $data) {
                 echo "Row " . $id+2 . ": {$data}\n";
             }
         } else {
             echo "No email addresses in the data already exist in the database, so all data should be inserted ";
         }
+        echo "\n";
     }
 
     /**

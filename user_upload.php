@@ -107,10 +107,10 @@ Usage: php user_upload.php --file=filename.csv [--create_table] [--dry_run] [-u 
 Options:
 --file: Required. The CSV file to parse and upload to the database.
 --create_table: Optional. If set, the script will create the database table and exit without parsing or uploading any data. Database parameters must be specified.
---dry_run: Optional. If set, the script will parse the file and output the parsed data to the console without uploading to the database.
--u username: Optional. The username for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
--p password: Optional. The password for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
--h host: Optional. The host for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
+--dry_run: Optional. If set, the script will parse the file and output the parsed data to the console. Database parameters can be optionally added here for a dry run of database actions.
+-u username: Optional. The username for the database connection. Must be specified if --create_table is specified; optional if --dry_run is specified.
+-p password: Optional. The password for the database connection. Must be specified if --create_table is specified; optional if --dry_run is specified.
+-h host: Optional. The host for the database connection. Must be specified if --create_table is specified; optional if --dry_run is specified.
 --help: Optional. If set, the script will display this help message and exit.
 
 EOT;
