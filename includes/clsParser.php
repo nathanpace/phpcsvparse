@@ -181,12 +181,9 @@ class clsParser
         foreach ($this->getDataRows() as $index => $row) {
             $rowNumber = $row['_rowNumber'] ?? ($index + 2);
 
-            try {
-                $this->validatedEmail($index, $row['email'] ?? '', $rowNumber);
+            if ($this->validatedEmail($index, $row['email'] ?? '', $rowNumber)) {
                 $this->cleanseValue($index, $row['name'] ?? '', 'name');
                 $this->cleanseValue($index, $row['surname'] ?? '', 'surname');
-            } catch (Exception $e) {
-                continue;
             }
         }
     }
@@ -197,31 +194,31 @@ class clsParser
      * @param int $index Data index in $dataRows.
      * @param string $email Raw email string.
      * @param int $rowNumber Original CSV row number for errors.
-     * @throws Exception On empty email, invalid format, or duplicate.
-     * @return void
+     * @return bool
      */
-    private function validatedEmail(int $index, string $email, int $rowNumber): void
+    private function validatedEmail(int $index, string $email, int $rowNumber): bool
     {
         $email = trim($email);
 
         if ($email === '') {
             $this->parseErrors[] = 'Row ' . $rowNumber . ': Email field is empty.';
-            throw new Exception('Empty email field');
+            return false;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->parseErrors[] = 'Row ' . $rowNumber . ': Invalid email format: ' . $email;
-            throw new Exception('Invalid email format: ' . $email);
+            return false;
         }
 
         $email = strtolower($email);
 
         if (array_search($email, array_column($this->cleansedData, 'email'), true) !== false) {
             $this->duplicateData[] = $this->dataRows[$index];
-            throw new Exception('Duplicate email found: ' . $email);
+            return false;
         }
 
         $this->cleansedData[$index]['email'] = $email;
+        return true;
     }
 
     /**
