@@ -46,3 +46,5 @@ php user_upload.php --help
 - The "dry run" will only check for duplicates in the file; it will not take into acount whether the emails already exist in the database as no dtabase parameters are required for this action 
 
 ## Possible future improvements?
+- Amend the "dry run" so it checks the DB for the existence of an email address before inserting (need to be mindful of memory/performance issues)
+- Allow more flexibility when creating the storage table in the DB (eg. table name/structure)
