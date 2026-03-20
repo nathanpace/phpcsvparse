@@ -65,7 +65,10 @@ class clsDB
             if ($input === 'Y') {
                 $this->dropTable();
                 $this->createTable();
+            } else {
+                echo "Users table will not be dropped/rebuilt. Exiting.\n";
             }
+            echo "\n";
         }
     }
 
@@ -154,7 +157,7 @@ class clsDB
                 }
             }
 
-            echo "\nProcess complete. Inserts: " . $inserts . ". Duplicates: " . $duplicates . "\n";
+            echo "\nProcess complete. Inserts: " . $inserts . ". Duplicates: " . $duplicates . ".\n\n";
         } catch (\PDOException $e) {
             $this->handlePdoException($e);
         }
@@ -222,7 +225,7 @@ class clsDB
                 echo "Row " . $id+2 . ": {$data}\n";
             }
         } else {
-            echo "No email addresses in the data already exist in the database, so all data should be inserted ";
+            echo "No email addresses in the data already exist in the database, so all data should be inserted.\n";
         }
         echo "\n";
     }
@@ -237,7 +240,7 @@ class clsDB
     private function getPdo(): \PDO
     {
         if ($this->pdo === null) {
-            throw new \Exception("Database connection failed.");
+            throw new \Exception("Database connection failed.\n");
         }
         return $this->pdo;
     }
@@ -271,9 +274,9 @@ class clsDB
     {
         switch ($e->errorInfo[0]) {
             case self::CONNECTION_FAIL:
-                throw new \Exception("Could not connect to database, please check host/username/password details.");
+                throw new \Exception("Could not connect to database, please check host/username/password details.\n");
             default:
-                throw new \Exception("Database error: " . $e->getMessage());
+                throw new \Exception("Database error: " . $e->getMessage() . "\n");
         }
     }
 }
