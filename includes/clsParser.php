@@ -73,14 +73,16 @@ class clsParser
             }
 
             if (count($row) !== count($this->headerRow)) {
-                $this->parseErrors[] = 'Row ' . $rowNumber . ' has a mismatched column count.';
+                $this->parseErrors[] = 'Row ' . $rowNumber . ': mismatched column count.';
+                $row["_rowNumber"] = $rowNumber;
                 $this->dirtyData[] = $row;
                 continue;
             }
 
             $assoc = array_combine($this->headerRow, $row);
             if ($assoc === false) {
-                $this->parseErrors[] = 'Row ' . $rowNumber . ' could not be combined with header columns.';
+                $this->parseErrors[] = 'Row ' . $rowNumber . ': could not be combined with header columns.';
+                $row["_rowNumber"] = $rowNumber;
                 $this->dirtyData[] = $row;
                 continue;
             }
@@ -160,10 +162,11 @@ class clsParser
      */
     public function output(): void
     {
-        echo "\n+-----------------------------+";
+        echo "\n+=============================+";
         echo "\n| CSV Parser - dry run output |";
-        echo "\n+-----------------------------+\n\n";
-        echo "The following cleansed rows from the CSV file would be written to the database:\n\n";
+        echo "\n+=============================+\n\n";
+        echo "The following cleansed rows from the CSV file are ready to be written to the database:\n";
+        echo "--------------------------------------------------------------------------------------\n";
         
         // Display cleansed data row(s) - ensure values are in the same order as the header row.
         foreach ($this->getCleansedData(true) as $row) {
@@ -172,7 +175,8 @@ class clsParser
 
         // Show rows with duplicate email addresses, if any
         if (!empty($this->duplicateData)) {
-            echo "\nThe following duplicate email addresses were found in the file; these rows would not be written to the database:\n\n";
+            echo "\nThe following duplicate email addresses were found in the file; these rows would not be written to the database:\n";
+            echo "----------------------------------------------------------------------------------------------------------------\n";
             foreach ($this->duplicateData as $i => $row) {
                 $rowNum = array_pop($row);
                 echo "Row $rowNum: " . implode(',', $row) . "\n";
@@ -183,13 +187,26 @@ class clsParser
 
         // Show parse errors, if any
         if (!empty($this->parseErrors)) {
-            echo "\nThe following parse errors were found in the file; these rows would not be written to the database:\n\n";
+            echo "\nThe following parse errors were found in the file; these rows would not be written to the database:\n";
+            echo "---------------------------------------------------------------------------------------------------\n";
             foreach ($this->parseErrors as $i => $error) {
                 echo "$error\n";
             }
         } else {
             echo "\nNo parse errors encountered.\n";
         }
+
+        // Show "dirty" data, if any
+        if (!empty($this->dirtyData)) {
+            echo "\nThe following data rows could not be processed due to column mismatches or some other issue with the data:\n";
+            echo "----------------------------------------------------------------------------------------------------------\n";
+            foreach ($this->dirtyData as $i => $row) {
+                $rowNum = array_pop($row);
+                echo "Row $rowNum: " . implode(',', $row) . "\n";
+            }
+        } else {
+            echo "\nAll rows successfully processed.\n";
+        }       
         echo "\n";
     }
 
