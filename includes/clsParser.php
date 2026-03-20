@@ -206,9 +206,8 @@ class clsParser
                 $rowNum = array_pop($row);
                 echo "Row $rowNum: " . implode(',', $row) . "\n";
             }
-        } else {
-            echo "\nAll rows successfully processed.\n";
-        }       
+        } 
+        echo "\nAll rows in the supplied CSV file have been processed.\n";
         echo "\n";
     }
 
