@@ -38,7 +38,14 @@ try {
         if (isset($args["dry_run"])) {
             $parser = new clsParser();
             $parser->parseFile($args["file"]);
+            $parsed = $parser->getCleansedData(true);
             $parser->output();
+            $db = new clsDB([
+                "username" => $args["u"],
+                "password" => $args["p"],
+                "host" => $args["h"],
+            ]);
+            $db->dryRun($parsed);
             exit(0);
         }
     } else {

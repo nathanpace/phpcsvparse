@@ -160,6 +160,58 @@ class clsDB
         }
     }
 
+    public function dryRun(array $data): void
+    {
+         // Keep count of number of entries to be inserted, number of successful inserts, 
+        // and number of duplicate email addresses
+        $entries = count($data);
+        $inserts = [];
+        $ignores = [];
+
+        $sql = 'SELECT 1 AS "exists" FROM users WHERE email = :email';
+        
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare($sql);
+
+            // Try/catch block round each row so duplicates can be handled 
+            foreach ($data as $id => $row) {
+
+                $stmt->execute([
+                    ':email' => $row['email'],
+                ]);
+                $found = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($found === false) {
+                    $inserts[$id] = implode(",", $row);
+                } else {
+                    $ignores[$id] = implode(",", $row);
+                }
+            }
+        } catch (\PDOException $e) {
+            $this->handlePdoException($e);
+        }  
+        
+        if (count($inserts) > 0) {
+            echo "These rows will be inserted:\n";
+            foreach ($inserts as $id => $data) {
+                echo "Row " . $id+2 . ": {$data}\n";
+            }
+            echo "\n";
+        } else {
+            echo "No data will be inserted.";
+        }
+ 
+        if (count($ignores) > 0) {
+            echo "These rows will be ignored as the email addresses already exist in the DB:\n";
+            foreach ($ignores as $id => $data) {
+                echo "Row " . $id+2 . ": {$data}\n";
+            }
+        } else {
+            echo "No data will be ignored.";
+        }
+    }
+
     /**
      * Checks to see if the PDO conection has been established
      * 
