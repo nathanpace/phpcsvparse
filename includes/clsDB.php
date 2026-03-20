@@ -10,8 +10,8 @@ class clsDB
     private ?\PDO $pdo = null;
 
     // These values match the error codes returned by Postgres based on the relevant SQL error
-    const TABLE_NOT_EXISTS = '42P01';
-    const INVALID_USER_PASS = '08006';
+    const TABLE_NOT_EXIST = '42P01';
+    const CONNECTION_FAIL = '08006';
     const DUPLICATE_ENTRY = '23505';
 
     /**
@@ -42,7 +42,7 @@ class clsDB
             try {
                 $pdo = $this->getPdo();
                 $pdo->exec($sql);
-                echo "Table 'users' created successfully.\n";
+                echo "Users table created successfully.\n";
             } catch (\PDOException $e) {
                 $this->handlePdoException($e);
             }
@@ -65,7 +65,7 @@ class clsDB
         try {
             $pdo = $this->getPdo();
             $pdo->exec($sql);
-            echo "Table 'users' dropped successfully.\n";
+            echo "Users table dropped successfully.\n";
         } catch (\PDOException $e) {
             $this->handlePdoException($e);
         }
@@ -81,7 +81,7 @@ class clsDB
             $pdo->query('SELECT 1 FROM users LIMIT 1');
             return true;
         } catch (\PDOException $e) {
-            if ($e->errorInfo[0] === self::TABLE_NOT_EXISTS) {
+            if ($e->errorInfo[0] === self::TABLE_NOT_EXIST) {
                 return false;
             } else {
                 $this->handlePdoException($e);
@@ -164,8 +164,8 @@ class clsDB
     private function handlePdoException(object $e): void
     {
         switch ($e->errorInfo[0]) {
-            case self::INVALID_USER_PASS:
-                throw new \Exception("Invalid username/password supplied, please check.");
+            case self::CONNECTION_FAIL:
+                throw new \Exception("Could not connect to database, please check host/username/password details.");
             default:
                 throw new \Exception("Database error: " . $e->getMessage());
         }
