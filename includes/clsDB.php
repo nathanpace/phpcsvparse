@@ -83,10 +83,10 @@ class clsDB
         } catch (\PDOException $e) {
             if ($e->errorInfo[0] === self::TABLE_NOT_EXISTS) {
                 return false;
+            } else {
+                $this->handlePdoException($e);
             }
-            $this->handlePdoException($e);
         }
-        return false;
     }
 
     /**
@@ -164,8 +164,6 @@ class clsDB
     private function handlePdoException(object $e): void
     {
         switch ($e->errorInfo[0]) {
-            case self::TABLE_NOT_EXISTS:
-                throw new \Exception("Users table does not exist, please re-run script with --create-table switch set");
             case self::INVALID_USER_PASS:
                 throw new \Exception("Invalid username/password supplied, please check.");
             default:
