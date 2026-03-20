@@ -25,8 +25,8 @@ $args = getopt($argsShort, $argsLong);
 // Order is important here to avoid conflicts. For example, if "help" is passed, we want to show the help message regardless of what other args are passed.
 try {
 
-     // Show help message
-    if (isset($args["help"])) {
+     // Show help message if no args submitted or the --help flag has been set
+    if (count($args) === 0 || isset($args["help"])) {
         showHelp();
         exit(0);
     }
