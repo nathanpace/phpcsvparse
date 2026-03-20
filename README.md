@@ -48,7 +48,7 @@ php user_upload.php --help
 ## Assumptions/Notes
 - The database has been configured with a user and password which has permissions to create tables and insert data - these will need to be passed (along with the host) on the command line as per the usage instructions above.
 - The database name is automatically assumed to be "postgres". To amend this for your own means, you can edit the default name in the clsDB constructor.
-- The supplied CSV file has a header row as its first row, which matches the database fields the data is to be inseerted into.
+- The supplied CSV file has a header row as its first row, which matches the database fields the data is to be inserted into.
 - When performing a "dry run" against the database, the script will do a small SELECT action for each email address in the supplied data.
 
 ## Possible future improvements?
