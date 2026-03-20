@@ -171,8 +171,8 @@ class clsParser
         echo "--------------------------------------------------------------------------------------\n";
         
         // Display cleansed data row(s) - ensure values are in the same order as the header row.
-        foreach ($this->getCleansedData(true) as $row) {
-            echo implode(',', $row) . "\n";
+        foreach ($this->getCleansedData(true) as $rowNum => $row) {
+            echo "Row " . $rowNum + 2 . ": ". implode(',', $row) . "\n";
         }
 
         // Show rows with duplicate email addresses, if any
@@ -184,7 +184,7 @@ class clsParser
                 echo "Row $rowNum: " . implode(',', $row) . "\n";
             }
         } else {
-            echo "\nNo duplicate addresses found in the data.\n";
+            echo "\nNo duplicate addresses found in the file.\n";
         }
 
         // Show parse errors, if any
@@ -206,9 +206,8 @@ class clsParser
                 $rowNum = array_pop($row);
                 echo "Row $rowNum: " . implode(',', $row) . "\n";
             }
-        } else {
-            echo "\nAll rows successfully processed.\n";
-        }       
+        } 
+        echo "\nAll rows in the supplied CSV file have been processed.\n";
         echo "\n";
     }
 

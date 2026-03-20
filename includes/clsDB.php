@@ -160,21 +160,32 @@ class clsDB
         }
     }
 
+     /**
+     * Do a "dry-run" of inserting the data into the DB
+     * No data will be inserted but email addresses will be checked for existence in the DB
+     * 
+     * @param array $data data to be checked
+     * @return @void
+     */
     public function dryRun(array $data): void
     {
-         // Keep count of number of entries to be inserted, number of successful inserts, 
-        // and number of duplicate email addresses
+        // Cnumber of entries to be inserted, and store inserts and ignores
         $entries = count($data);
         $inserts = [];
         $ignores = [];
 
+        echo "+------------------------------------------------+\n";
+        echo "| Now dry-running data inserts against database. |\n";
+        echo "+------------------------------------------------+\n";
+        echo "Number of inserts to attempt: $entries\n\n";
+
+        // No row will be returned from this query if the email address does not exist.
         $sql = 'SELECT 1 AS "exists" FROM users WHERE email = :email';
         
         try {
             $pdo = $this->getPdo();
             $stmt = $pdo->prepare($sql);
 
-            // Try/catch block round each row so duplicates can be handled 
             foreach ($data as $id => $row) {
 
                 $stmt->execute([
@@ -182,6 +193,7 @@ class clsDB
                 ]);
                 $found = $stmt->fetch(\PDO::FETCH_ASSOC);
                 
+                // False return value = no row found, so assume row can be inserted
                 if ($found === false) {
                     $inserts[$id] = implode(",", $row);
                 } else {
@@ -190,25 +202,27 @@ class clsDB
             }
         } catch (\PDOException $e) {
             $this->handlePdoException($e);
-        }  
+        }
+
+        // Output information on inserts/duplicates to screen
         
         if (count($inserts) > 0) {
-            echo "These rows will be inserted:\n";
+            echo "These rows would be successfully inserted:\n";
             foreach ($inserts as $id => $data) {
                 echo "Row " . $id+2 . ": {$data}\n";
             }
             echo "\n";
         } else {
-            echo "No data will be inserted.";
+            echo "No rows would be inserted.";
         }
  
         if (count($ignores) > 0) {
-            echo "These rows will be ignored as the email addresses already exist in the DB:\n";
+            echo "These rows would NOT be inserted as the email addresses already exist in the DB:\n";
             foreach ($ignores as $id => $data) {
                 echo "Row " . $id+2 . ": {$data}\n";
             }
         } else {
-            echo "No data will be ignored.";
+            echo "No email addresses in the data already exist in the database, so all data should be inserted ";
         }
     }
 
