@@ -65,7 +65,10 @@ class clsDB
             if ($input === 'Y') {
                 $this->dropTable();
                 $this->createTable();
+            } else {
+                echo "Users table will not be dropped/rebuilt. Exiting.\n";
             }
+            echo "\n";
         }
     }
 
@@ -154,10 +157,77 @@ class clsDB
                 }
             }
 
-            echo "\nProcess complete. Inserts: " . $inserts . ". Duplicates: " . $duplicates . "\n";
+            echo "\nProcess complete. Inserts: " . $inserts . ". Duplicates: " . $duplicates . ".\n\n";
         } catch (\PDOException $e) {
             $this->handlePdoException($e);
         }
+    }
+
+     /**
+     * Do a "dry-run" of inserting the data into the DB
+     * No data will be inserted but email addresses will be checked for existence in the DB
+     * 
+     * @param array $data data to be checked
+     * @return @void
+     */
+    public function dryRun(array $data): void
+    {
+        // Cnumber of entries to be inserted, and store inserts and ignores
+        $entries = count($data);
+        $inserts = [];
+        $ignores = [];
+
+        echo "+------------------------------------------------+\n";
+        echo "| Now dry-running data inserts against database. |\n";
+        echo "+------------------------------------------------+\n";
+        echo "Number of inserts to attempt: $entries\n\n";
+
+        // No row will be returned from this query if the email address does not exist.
+        $sql = 'SELECT 1 AS "exists" FROM users WHERE email = :email';
+        
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare($sql);
+
+            foreach ($data as $id => $row) {
+
+                $stmt->execute([
+                    ':email' => $row['email'],
+                ]);
+                $found = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                // False return value = no row found, so assume row can be inserted
+                if ($found === false) {
+                    $inserts[$id] = implode(",", $row);
+                } else {
+                    $ignores[$id] = implode(",", $row);
+                }
+            }
+        } catch (\PDOException $e) {
+            $this->handlePdoException($e);
+        }
+
+        // Output information on inserts/duplicates to screen
+        
+        if (count($inserts) > 0) {
+            echo "These rows would be successfully inserted:\n";
+            echo "-----------------------------------------\n";
+            foreach ($inserts as $id => $data) {
+                echo "Row " . $id+2 . ": {$data}\n";
+            }
+            echo "\n";
+        } 
+ 
+        if (count($ignores) > 0) {
+            echo "These rows would NOT be inserted as the email addresses already exist in the DB:\n";
+            echo "--------------------------------------------------------------------------------\n";
+            foreach ($ignores as $id => $data) {
+                echo "Row " . $id+2 . ": {$data}\n";
+            }
+        } else {
+            echo "No email addresses in the data already exist in the database, so all data should be inserted.\n";
+        }
+        echo "\n";
     }
 
     /**
@@ -170,7 +240,7 @@ class clsDB
     private function getPdo(): \PDO
     {
         if ($this->pdo === null) {
-            throw new \Exception("Database connection failed.");
+            throw new \Exception("Database connection failed.\n");
         }
         return $this->pdo;
     }
@@ -204,9 +274,9 @@ class clsDB
     {
         switch ($e->errorInfo[0]) {
             case self::CONNECTION_FAIL:
-                throw new \Exception("Could not connect to database, please check host/username/password details.");
+                throw new \Exception("Could not connect to database, please check host/username/password details.\n");
             default:
-                throw new \Exception("Database error: " . $e->getMessage());
+                throw new \Exception("Database error: " . $e->getMessage() . "\n");
         }
     }
 }

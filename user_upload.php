@@ -39,12 +39,22 @@ try {
             $parser = new clsParser();
             $parser->parseFile($args["file"]);
             $parser->output();
+
+            // If database params have been supplied, dry-run the database process too.
+            if (!empty($args["u"]) && !empty($args["p"]) && !empty($args["h"])) {
+                $db = new clsDB([
+                    "username" => $args["u"],
+                    "password" => $args["p"],
+                    "host" => $args["h"],
+                ]);
+                $db->dryRun($parser->getCleansedData(true));
+            }
             exit(0);
         }
     } else {
         // Throw filename missing exception if no filename and create table has not been specified
         if (!isset($args["create_table"])) {
-            throw new Exception("No filename supplied. Please provide a filename using the --file argument, or --create_table to create the users table");
+            throw new Exception("No filename supplied. Please provide a filename using the --file argument, or --create_table to create the users table.\n");
         }
     }
 
@@ -52,7 +62,7 @@ try {
     // Check supplied DB parameters; if all required are present, attempt connection.
     // If any are missing, throw exception.
     if (empty($args["u"]) || empty($args["p"]) || empty($args["h"])) {
-        throw new Exception("Missing database parameters. Please provide username, password, and host.");
+        throw new Exception("Missing database parameters. Please provide username, password, and host.\n");
     }
     
     $db = new clsDB([
@@ -69,7 +79,7 @@ try {
 
     // Mising file should have been handled above, sanity check here
     if (empty($args["file"])) {
-        throw new Exception("No filename supplied. Please provide a filename using the --file argument, or --create_table to create the users table.");
+        throw new Exception("No filename supplied. Please provide a filename using the --file argument, or --create_table to create the users table.\n");
     }
 
     // Attempt to insert parsed data into database
@@ -87,6 +97,8 @@ try {
  */
 function showHelp(): void 
 {
+    echo"\n";
+    
     echo <<<EOT
 PHP CSV Parser - user_upload.php
 -------------------------------
@@ -97,11 +109,12 @@ Usage: php user_upload.php --file=filename.csv [--create_table] [--dry_run] [-u 
 Options:
 --file: Required. The CSV file to parse and upload to the database.
 --create_table: Optional. If set, the script will create the database table and exit without parsing or uploading any data. Database parameters must be specified.
---dry_run: Optional. If set, the script will parse the file and output the parsed data to the console without uploading to the database.
--u username: Optional. The username for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
--p password: Optional. The password for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
--h host: Optional. The host for the database connection. Must be specified if a dry run is not being performed, or if --create_table is specified.
+--dry_run: Optional. If set, the script will parse the file and output the parsed data to the console. Database parameters can be optionally added here for a dry run of database actions.
+-u username: Optional. The username for the database connection. Must be specified if --create_table is specified; optional if --dry_run is specified.
+-p password: Optional. The password for the database connection. Must be specified if --create_table is specified; optional if --dry_run is specified.
+-h host: Optional. The host for the database connection. Must be specified if --create_table is specified; optional if --dry_run is specified.
 --help: Optional. If set, the script will display this help message and exit.
 
 EOT;
+    echo "\n";
 }

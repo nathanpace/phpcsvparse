@@ -41,17 +41,17 @@ class clsParser
     {
         // Check file exists, is of an acceptable mime type, and can be opened
         if (!file_exists($filename)) {
-            throw new Exception('File not found: ' . $filename . ". Please provide a valid filename using the --file argument.");
+            throw new Exception('File not found: ' . $filename . ". Please provide a valid filename using the --file argument.\n");
         }
 
         $mimeType = mime_content_type($filename) ?: '';
         if (!in_array($mimeType, $this->allowedMimeTypes, true)) {
-            throw new Exception('Invalid file type for file ' . $filename . ". Please provide a valid CSV file.");
+            throw new Exception('Invalid file type for file ' . $filename . ". Please provide a valid CSV file.\n");
         }
 
         $handle = fopen($filename, 'r');
         if ($handle === false) {
-            throw new Exception('Unable to open file: ' . $filename . ". Please ensure it is readable.");
+            throw new Exception('Unable to open file: ' . $filename . ". Please ensure it is readable.\n");
         }
 
         // Assume the first row contains the column headers, isolate into separate variable
@@ -59,7 +59,7 @@ class clsParser
         $header = fgetcsv($handle);
         if ($header === false || empty($header) || count(array_filter($header, fn($v) => $v !== null && $v !== '')) === 0) {
             fclose($handle);
-            throw new Exception('No valid CSV header row found in file: ' . $filename);
+            throw new Exception('No valid CSV header row found in file: ' . $filename . "\n");
         }
         $this->headerRow = $header;
 
@@ -96,7 +96,7 @@ class clsParser
         fclose($handle);
 
         if (empty($this->dataRows)) {
-            throw new Exception('No data rows found in file: ' . $filename . ". Please provide a CSV file with at least one data row.");
+            throw new Exception('No data rows found in file: ' . $filename . ". Please provide a CSV file with at least one data row.\n");
         }
 
         // At this stage, all data has been extracted from the file so it can now be cleansed
